@@ -6,147 +6,161 @@
 #include <sstream>
 #include <algorithm>
 #include "kdTree.h"
+#include <cmath>
+#include <limits>
+
 using namespace std;
-#define DIMENSIONS 6
+
+size_t dimension = std::numeric_limits<int>::max();
+
 // Define a struct to represent a data point
 struct DataPoint {
-    double feature1;
-    double feature2;
-    double feature3;
-    double feature4;
-    double feature5;
-    double feature6;
-    int label;
+  vector<double> features;
+  int label;
 };
 
 // Function to check if a string is a positive integer
 bool isPositiveInteger(const string& s) {
-    for (char c : s) {
-        if (!isdigit(c)) {
-            return false;
-        }
+  for (char c : s) {
+    if (!isdigit(c)) {
+      return false;
     }
-    return true;
+  }
+  return true;
 }
 
 // Function to parse input file into a vector of strings separated by newlines
 vector<DataPoint> parseInput(const string& filename) {
-    vector<DataPoint> dataPoints;
-    string line;
-    ifstream file(filename);
-    if (file.is_open()) {
-        while (getline(file, line)) {
-            istringstream iss(line);
-            DataPoint dataPoint;
-            char comma;  // To read and discard the comma separator
-            iss >> dataPoint.feature1 >> comma
-                >> dataPoint.feature2 >> comma
-                >> dataPoint.feature3 >> comma
-                >> dataPoint.feature4 >> comma
-                >> dataPoint.feature5 >> comma
-                >> dataPoint.feature6 >> comma
-                >> dataPoint.label;
-
-            // Optional: Print the parsed data for verification
-            // cout << "Parsed: " << dataPoint.feature1 << ", " << dataPoint.feature2 << ", " << dataPoint.label << endl;
-
-            dataPoints.push_back(dataPoint);
+  vector<DataPoint> dataPoints;
+  string line;
+  ifstream file(filename);
+  
+  if (file.is_open()) {
+    while (getline(file, line)) {
+      istringstream iss(line);
+      DataPoint dataPoint;
+      double content;
+      char comma;  // To read and discard the comma separator
+      
+      // Read features and label into the vector
+      while (iss >> content) {
+        // Check for the end of the line
+        if (iss.peek() == '\n' || iss.peek() == EOF) {
+          // Read the label
+          dataPoint.label = (int)content;
+          break;
         }
-        file.close();
-    } else {
-        cout << "Unable to open file " << filename << endl;
+
+        dataPoint.features.push_back(content);
+        iss >> comma;
+      }
+
+      dimension = fminf(dimension, dataPoint.features.size());
+
+      // Add data point
+      dataPoints.push_back(dataPoint);
     }
-    cout << "Parsed " << dataPoints.size() << " data points from " << filename << endl;
-    return dataPoints;
+    file.close();
+  } else {
+    cout << "Unable to open file " << filename << endl;
+  }
+
+  cout << "Parsed " << dataPoints.size() << " data points from " << filename << endl;
+  return dataPoints;
 }
 
 // Function to build a KD-tree
-kdNode<DIMENSIONS>* buildKDTree(vector<DataPoint>& data, int depth, int k) {
-    if (data.empty()) {
-        return nullptr;
-    }
+KDNode* buildKDTree(vector<DataPoint>& data, int depth, int k) {
+  if (data.empty()) {
+    return nullptr;
+  }
 
-    // Choose axis based on depth for balanced tree construction
-    int axis = depth % k;
+  // Choose axis based on depth for balanced tree construction
+  int axis = depth % k;
 
-    // Sort and choose median as pivot element
-    int median = data.size() / 2;
-    nth_element(data.begin(), data.begin() + median, data.end(),
-                [axis](const DataPoint& a, const DataPoint& b) {
-                    return a.feature1 < b.feature1; // Change the axis as needed
-                });
+  // Sort and choose median as pivot element along axis
+  int median = data.size() / 2;
+  nth_element(data.begin(), data.begin() + median, data.end(),
+              [axis](const DataPoint& a, const DataPoint& b) {
+                  return a.features[axis] < b.features[axis];
+              });
 
-    // Create node and construct subtrees
-    kdNode<DIMENSIONS>* node = new kdNode<DIMENSIONS>();
-    node->coordinates[0] = data[median].feature1;
-    node->coordinates[1] = data[median].feature2;
-    node->coordinates[2] = data[median].feature3;
-    node->coordinates[3] = data[median].feature4;
-    node->coordinates[4] = data[median].feature5;
-    node->coordinates[5] = data[median].feature6;
-    node->label = data[median].label;
-    node->left = buildKDTree(vector<DataPoint>(data.begin(), data.begin() + median), depth + 1);
-    node->right = buildKDTree(vector<DataPoint>(data.begin() + median + 1, data.end()), depth + 1);
+  KDNode* node = new KDNode();
+  node->features = data[median].features;
+  node->label = data[median].label;
 
-    return node;
+  // Construct subtrees
+  vector<DataPoint> leftData(data.begin(), data.begin() + median);
+  node->left = buildKDTree(leftData, depth + 1, k);
+  vector<DataPoint> rightData(data.begin() + median + 1, data.end());
+  node->right = buildKDTree(rightData, depth + 1, k);
+
+  return node;
 }
 
-// Function to print KD-tree for debugging
-void printKDTree(kdNode<DIMENSIONS>* root) {
-    if (root != nullptr) {
-        cout << "Feature1: " << root->coordinates[0] << ", Feature2: " << root->coordinates[1] << ", ..., Label: " << root->coordinates[DIMENSIONS - 1] << endl;
-        printKDTree(root->left);
-        printKDTree(root->right);
-    }
+// Print KD-tree in-order
+void printKDTree(KDNode* root) {
+  if (root == nullptr) {
+    return;
+  }
+
+  // Traverse left subtree
+  printKDTree(root->left);
+
+  // Print information for the current node
+  std::cout << "Features: ";
+  for (double feature : root->features) {
+    std::cout << feature << " ";
+  }
+  std::cout << "| Label: " << root->label << std::endl;
+
+  // Traverse right subtree
+  printKDTree(root->right);
 }
 
 int main(int argc, char *argv[]) {
-    int k = -1;
-    string filename = "";
+  int k;
+  string filename = "";
+  int opt;
 
-    int opt;
-    while ((opt = getopt(argc, argv, "hk:i:")) != -1) {
-        switch (opt) {
-            case 'h':
-                cout << "Usage: ./kdTree -k <number of dimensions> -i <input file>" << endl;
-                return 0;
-            case 'k':
-                if (isPositiveInteger(optarg)) {
-                    k = stoi(optarg);
-                } else {
-                    cout << "Invalid value for k, k = " << optarg << endl;
-                    return 0;
-                }
-                break;
-            case 'i':
-                filename = optarg;
-                break;
-            default:
-                cout << "Usage: ./kdTree -k <number of dimensions>" << endl;
-                return 0;
+  while ((opt = getopt(argc, argv, "hk:i:")) != -1) {
+    switch (opt) {
+      case 'h':
+        cout << "Usage: " << argv[0] << " [-k value] [-i value]" << endl;
+        cout << "Options:" << endl;
+        cout << "  -k value       Number of dimension" << std::endl;
+        cout << "  -i value       Input dataset" << std::endl;
+        return 0;
+      case 'k':
+        if (isPositiveInteger(optarg)) {
+            k = stoi(optarg);
+        } else {
+            cout << "Invalid value for k, k = " << optarg << endl;
+            return 0;
         }
+        break;
+      case 'i':
+        filename = optarg;
+        break;
+      default:
+        cout << "Usage: ./kdTree -k <number of dimensions>" << endl;
+        return 0;
     }
+  }
 
-    cout << "Filename: " << filename << endl;
-    cout << "k: " << k << "\n" << endl;
-
-    // Open the file and parse input into a vector of strings separated by newlines
-    vector<DataPoint> input = parseInput(filename);
-    if (k > DIMENSIONS) {
-        cout << "k is greater than the number of dimensions in the data set" << endl;
-        cout << "setting k to the number of dimensions in the data set" << endl;
-        k = DIMENSIONS;
-    }
-
-    // Now we can use the input vector to build the kd-tree
-
-    kdNode<DIMENSIONS> *root = buildKDTree(input, 0, k);
-
-    printKDTree(root);
-
-
-
+  // Open the file and parse input into a vector of strings separated by newlines
+  vector<DataPoint> input = parseInput(filename);
     
+  if (k > dimension) {
+      cout << "Value given for k is greater than the number of features in the data set" << endl;
+      cout << "     Setting k to the number of dimensions in the data set" << endl;
+      k = dimension;
+  }
 
-    return 0;
+  // Use the input vector to build the kd-tree
+  KDNode *root = buildKDTree(input, 0, k);
+
+  printKDTree(root);
+
+  return 0;
 }

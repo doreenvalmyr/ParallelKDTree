@@ -1,26 +1,16 @@
-#include <cstddef>  // For size_t
+#include <cstddef>
 #include <vector>
 #include <cmath>
 #include <iostream>
 
-template <size_t Dimensions>
-// kdNode class
-class kdNode
+class KDNode
 {
 public:
-    kdNode* left;
-    kdNode* right;
-    int label;
-    // Additional member variables for each dimension
-    double coordinates[Dimensions];
-    
-    // Constructor to initialize coordinates
-    kdNode() {
-        for (size_t i = 0; i < Dimensions; ++i) {
-            coordinates[i] = 0.0;  // You can initialize to your desired default value
-        }
-    }
+  KDNode* left;
+  KDNode* right;
+  std::vector<double> features;
+  int label;
+  
+  // Constructor to initialize KDNode with features
+  KDNode() : left(nullptr), right(nullptr), label(0) {}
 };
-
-
-
