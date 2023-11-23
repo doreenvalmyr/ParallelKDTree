@@ -46,7 +46,7 @@ vector<DataPoint> parseInput(const string& filename) {
       // Read features and label into the vector
       while (iss >> content) {
         // Check for the end of the line
-        if (iss.peek() == '\n' || iss.peek() == EOF) {
+        if (isspace(iss.peek())) {
           // Read the label
           dataPoint.label = (int)content;
           break;
