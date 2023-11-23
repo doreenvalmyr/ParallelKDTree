@@ -8,10 +8,11 @@
 #include "kdTree.h"
 #include <cmath>
 #include <limits>
+#include "timing.h"
 
 using namespace std;
 
-size_t dimension = std::numeric_limits<int>::max();
+size_t dimension = numeric_limits<int>::max();
 
 // Define a struct to represent a data point
 struct DataPoint {
@@ -154,13 +155,16 @@ int main(int argc, char *argv[]) {
   if (k > dimension) {
       cout << "Value given for k is greater than the number of features in the data set" << endl;
       cout << "     Setting k to the number of dimensions in the data set" << endl;
+      cout << "Dimensions are " << dimension << endl;
       k = dimension;
   }
-
+  
+  Timer totalSimulationTimer;
   // Use the input vector to build the kd-tree
   KDNode *root = buildKDTree(input, 0, k);
+  double totalSimulationTime = totalSimulationTimer.elapsed();
 
-  printKDTree(root);
+  printf("Total simulation time: %.6fs\n", totalSimulationTime);
 
   return 0;
 }
