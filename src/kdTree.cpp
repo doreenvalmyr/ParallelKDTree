@@ -167,7 +167,5 @@ int main(int argc, char *argv[]) {
 
   printf("Total simulation time: %.6fs\n", totalSimulationTime);
 
-  printKDTree(root);
-
   return 0;
 }
