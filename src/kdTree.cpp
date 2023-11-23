@@ -46,7 +46,8 @@ vector<DataPoint> parseInput(const string& filename) {
       // Read features and label into the vector
       while (iss >> content) {
         // Check for the end of the line
-        if (isspace(iss.peek())) {
+        if (isspace(iss.peek()) || iss.peek() == '\n' || 
+              iss.peek() == '\r' || iss.peek() == EOF) {
           // Read the label
           dataPoint.label = (int)content;
           break;
@@ -159,12 +160,14 @@ int main(int argc, char *argv[]) {
       k = dimension;
   }
   
-  Timer totalSimulationTimer;
   // Use the input vector to build the kd-tree
+  Timer totalSimulationTimer;
   KDNode *root = buildKDTree(input, 0, k);
   double totalSimulationTime = totalSimulationTimer.elapsed();
 
   printf("Total simulation time: %.6fs\n", totalSimulationTime);
+
+  printKDTree(root);
 
   return 0;
 }

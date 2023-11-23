@@ -154,8 +154,6 @@ KDNode* buildKDTreeOpenMP(vector<DataPoint>& data, int k) {
     return finalRoot;
 }
 
-
-
 // Print KD-tree in-order
 void printKDTree(KDNode* root) {
   if (root == nullptr) {
@@ -216,8 +214,8 @@ int main(int argc, char *argv[]) {
       k = dimension;
   }
   
-  Timer totalSimulationTimer;
   // Use the input vector to build the kd-tree
+  Timer totalSimulationTimer;
   KDNode *root = buildKDTreeOpenMP(input, k);
   double totalSimulationTime = totalSimulationTimer.elapsed();
 
