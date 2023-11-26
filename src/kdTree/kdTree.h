@@ -14,7 +14,7 @@ using namespace std;
 
 // Define a struct to represent a data point
 struct DataPoint {
-  std::vector<double> features;
+  vector<double> features;
   int label;
   int threadId;
 };
@@ -22,24 +22,24 @@ struct DataPoint {
 class KDNode
 {
 public:
-  std::vector<double> features;
+  vector<double> features;
   int label;
-  std::unique_ptr<KDNode> left;
-  std::unique_ptr<KDNode> right;
+  unique_ptr<KDNode> left;
+  unique_ptr<KDNode> right;
   
   // Constructor to initialize KDNode with features
-  KDNode() : left(nullptr), right(nullptr), label(0) {}
+  KDNode() : label(0), left(nullptr), right(nullptr) {}
 };
 
 class KDTree {
 public:
-  std::unique_ptr<KDNode> root;
+  unique_ptr<KDNode> root;
   size_t dimensions; // To store the dimensionality of the data
 
   // Constructor
   KDTree() : root(nullptr), dimensions(0) {}
 
-  void buildKDTree(std::vector<DataPoint>& data, int depth, int k);
+  void buildKDTree(vector<DataPoint>& data, int depth, int k);
 
   // Function to parse input file into a vector of strings separated by newlines
   vector<DataPoint> parseInput(const string& filename, size_t &dimension) {

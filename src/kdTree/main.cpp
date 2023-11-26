@@ -10,7 +10,7 @@ using namespace std;
 size_t dimension = numeric_limits<int>::max();
 
 int main(int argc, char *argv[]) {
-  int k;
+  size_t k;
   string filename = "";
   int opt;
 
