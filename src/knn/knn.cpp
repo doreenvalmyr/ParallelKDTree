@@ -30,7 +30,7 @@ double calculateDistance(vector<double> point1, vector<double> point2) {
 
 // Insert a node into the nearest neighbor vector in the correct position
 // Nearest neighbor vector is sorted in ascending order of distances
-void insertAndSortNeighbors(vector<DistanceNode>& nearestNeighbors, DistanceNode& neighbor, int k) {
+void insertAndSortNeighbors(vector<DistanceNode>& nearestNeighbors, DistanceNode& neighbor, size_t k) {
   // Use lower_bound to find the position to insert the new element
   auto it = std::lower_bound(nearestNeighbors.begin(),
                             nearestNeighbors.end(),
@@ -48,7 +48,7 @@ void insertAndSortNeighbors(vector<DistanceNode>& nearestNeighbors, DistanceNode
 }
 
 // Search KD Tree recursively to determine k nearest neighbors
-void kNNSearchRecursive(const KDNode* currentNode, const vector<double>& target, int k,
+void kNNSearchRecursive(const KDNode* currentNode, const vector<double>& target, size_t k,
                         vector<DistanceNode>& nearestNeighbors, int depth) {
   
   if (currentNode == nullptr) {
@@ -92,7 +92,7 @@ void KNN::kNNSearch(const KDTree& kdTree, const vector<double>& target, int k) {
   vector<DistanceNode> nearestNeighborsVector;
 
   // Add k nearest neighbors to result using kdTree
-  kNNSearchRecursive(kdTree.root.get(), target, k, nearestNeighborsVector, 0);
+  kNNSearchRecursive(kdTree.root.get(), target, (size_t)k, nearestNeighborsVector, 0);
 
   // Collect the results from the priority queue
   while (!nearestNeighborsVector.empty()) {
@@ -107,7 +107,6 @@ vector<double> parseInputVector(const std::string& input) {
   istringstream iss(input);
   double feature;
   vector<double> point;
-  char space;
   while (iss >> feature) {
     point.push_back(feature);
   }
@@ -171,7 +170,9 @@ int main(int argc, char *argv[]) {
   KNN knn;
   knn.kNNSearch(kdTree, target, k);
 
-  knn.printNearestNeighbors(knn.nearestNeighbors);
+  knn.printNearestNeighbors();
+
+  knn.findTargetLabel();
 
   return 0;
 }
