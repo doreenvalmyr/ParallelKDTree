@@ -9,20 +9,25 @@ using namespace std;
 struct DistanceNode {
   double distance;
   const KDNode* node;
-
-  // Custom comparison function for sorting in the priority queue
-  // Higher priority given to smaller distances from target point
-  static bool compareByDistance(const DistanceNode& a, const DistanceNode& b) {
-    return a.distance > b.distance;
-  }
 };
 
 class KNN {
 public:
-  // Constructor
-  
+  vector<DataPoint> nearestNeighbors;
 
-  vector<DataPoint> kNNSearch(const KDTree& kdTree, const vector<double>& target, int k);
+  void kNNSearch(const KDTree& kdTree, const vector<double>& target, int k);
+
+  void printNearestNeighbors(vector<DataPoint>& nearestNeighbors) {
+    cout << "\nList of " << nearestNeighbors.size() << " nearest neighbors:" << endl;
+    for (auto neighbor : nearestNeighbors) {
+      int numFeatures = neighbor.features.size();
+      for (int i = 0; i < numFeatures; i++) {
+        cout << neighbor.features[i] << " ";
+      }
+      cout << neighbor.label << endl;
+    }
+    cout << "\n";
+  }
 };
 
 #endif

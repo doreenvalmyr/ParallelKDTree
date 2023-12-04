@@ -3,12 +3,12 @@
 #include <vector>
 #include <queue>
 #include <cmath>
+#include <algorithm>
 #include "../kdTree/kdTree.h"
 #include "../utils.h"
 #include "knn.h"
 
 using namespace std;
-using KNNPriorityQueue = priority_queue<DistanceNode, vector<DistanceNode>, decltype(&DistanceNode::compareByDistance)>;
 
 // Calculate Euclidean distance between two points
 // Generalizable to points with any number of features
@@ -28,38 +28,47 @@ double calculateDistance(vector<double> point1, vector<double> point2) {
   return sqrt(distance);
 }
 
+// Insert a node into the nearest neighbor vector in the correct position
+// Nearest neighbor vector is sorted in ascending order of distances
+void insertAndSortNeighbors(vector<DistanceNode>& nearestNeighbors, DistanceNode& neighbor, int k) {
+  // Use lower_bound to find the position to insert the new element
+  auto it = std::lower_bound(nearestNeighbors.begin(),
+                            nearestNeighbors.end(),
+                            neighbor,
+                            [](const DistanceNode& a, const DistanceNode& b) {
+    return a.distance < b.distance;
+  });
+
+  nearestNeighbors.insert(it, neighbor);
+
+  // Remove the last element if there are more than k neighbors
+  if (nearestNeighbors.size() > k) {
+    nearestNeighbors.pop_back();
+  }
+}
+
 // Search KD Tree recursively to determine k nearest neighbors
 void kNNSearchRecursive(const KDNode* currentNode, const vector<double>& target, int k,
-                        KNNPriorityQueue& nearestNeighbors, int depth) {
+                        vector<DistanceNode>& nearestNeighbors, int depth) {
+  
   if (currentNode == nullptr) {
     return;
   }
-  cout << "kNNSearchRecursive 1" << endl;
 
   int axis = depth % target.size();
 
   // Calculate distance of target point to current node
   double distance;
   try {
-    double distance = calculateDistance(target, currentNode->features);
+    distance = calculateDistance(target, currentNode->features);
   } catch (const invalid_argument& error) {
     cerr << "Exception caught: " << error.what() << endl;
+    return;
   }
 
-  cout << "kNNSearchRecursive 2" << endl;
-  cout << "Distance: " << distance << endl;
-
-  // Update nearest neighbors queue
+  // Insert the new DistanceNode into the vector in ascending order
   DistanceNode neighbor = {distance, currentNode};
-  nearestNeighbors.push(neighbor);
-  cout << distance << endl;
-  cout << "HEY 1" << endl;
-  if (nearestNeighbors.size() > k) {
-    cout << "HELLO 1" << endl;
-    nearestNeighbors.pop();  // Keep only k nearest neighbors in the queue
-  }
-
-  cout << "kNNSearchRecursive 3" << endl;
+  insertAndSortNeighbors(nearestNeighbors, neighbor, k);
 
   // Recursively search the side of the splitting plane that contains the target point
   if (target[axis] < currentNode->features[axis]) {
@@ -68,44 +77,32 @@ void kNNSearchRecursive(const KDNode* currentNode, const vector<double>& target,
     kNNSearchRecursive(currentNode->right.get(), target, k, nearestNeighbors, depth + 1);
   }
 
-  cout << "kNNSearchRecursive 4" << endl;
-
   // Check if we need to search the other side (if there could be closer points)
-  if (nearestNeighbors.size() < k || abs(target[axis] - currentNode->features[axis]) < nearestNeighbors.top().distance) {
+  if (nearestNeighbors.size() < k || abs(target[axis] - currentNode->features[axis]) < nearestNeighbors.back().distance) {
     if (target[axis] < currentNode->features[axis]) {
       kNNSearchRecursive(currentNode->right.get(), target, k, nearestNeighbors, depth + 1);
     } else {
       kNNSearchRecursive(currentNode->left.get(), target, k, nearestNeighbors, depth + 1);
     }
   }
-
-  cout << "kNNSearchRecursive 5" << endl;
 }
 
 // Find k nearest neighbors of target point
-vector<DataPoint> KNN::kNNSearch(const KDTree& kdTree, const vector<double>& target, int k) {
-  cout << "kNNSearch 1" << endl;
-  // Create priority that is a minheap based on distance
-  KNNPriorityQueue nearestNeighbors;
-  cout << "kNNSearch 2" << endl;
+void KNN::kNNSearch(const KDTree& kdTree, const vector<double>& target, int k) {
+  vector<DistanceNode> nearestNeighborsVector;
 
-  // Add k nearest neighbors to queue using kdTree
-  kNNSearchRecursive(kdTree.root.get(), target, k, nearestNeighbors, 0);
-
-  cout << "kNNSearch 3" << endl;
+  // Add k nearest neighbors to result using kdTree
+  kNNSearchRecursive(kdTree.root.get(), target, k, nearestNeighborsVector, 0);
 
   // Collect the results from the priority queue
-  vector<DataPoint> result;
-  while (!nearestNeighbors.empty()) {
-    result.push_back({ nearestNeighbors.top().node->features, nearestNeighbors.top().node->label });
-    nearestNeighbors.pop();
+  while (!nearestNeighborsVector.empty()) {
+    DistanceNode point = nearestNeighborsVector.back();
+    nearestNeighbors.push_back({ point.node->features, point.node->label });
+    nearestNeighborsVector.pop_back();
   }
-
-  cout << "kNNSearch 4" << endl;
-
-  return result;
 }
 
+// Parse target point (vector of features)
 vector<double> parseInputVector(const std::string& input) {
   istringstream iss(input);
   double feature;
@@ -172,9 +169,9 @@ int main(int argc, char *argv[]) {
   kdTree.buildKDTree(data, 0, d);
 
   KNN knn;
-  vector<DataPoint> nearestNeighbors = knn.kNNSearch(kdTree, target, k);
+  knn.kNNSearch(kdTree, target, k);
 
-  cout << "Nearest neighbor size: " << nearestNeighbors.size() << endl;
+  knn.printNearestNeighbors(knn.nearestNeighbors);
 
   return 0;
 }
