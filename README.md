@@ -52,10 +52,17 @@ The ultimate goal is to deliver a highly efficient, scalable, and well-documente
 ## PLATFORM CHOICE
 Multi-core CPUs provide a cost-effective and widely accessible environment for initial algorithm design and testing. OpenMP simplifies shared-memory parallelism for KD tree construction and intra-node kNN search, while MPI offers scalability to distributed computing if needed. This choice allows for adaptability to more specialized platforms, such as GPU-enabled systems, for potential performance optimization. The platform's flexibility aligns with the project's goal of delivering an efficient and scalable parallel algorithm for kNN search.
 
-## SCHEDULE
-Project Proposal Nov 7 - Nov 15  
-Parallelize KD tree Construction Nov 19 - Nov 29  
-Parallel kNN Search Nov 30 - Dec 5  
-Milestone Report Nov 29 - Dec 3  
-Performance Benchmarking Dec 6 - Dec 10  
-Final Report December 7 - Dec 14  
+## UPDATED SCHEDULE
+| Task | Dates | Assignee | Status
+| :---------|:--------|:--------|:--------
+| Project Proposal | Nov 7 - Nov 15 | Doreen and Neelansh | Completed
+| Sequential KD Tree algorithm | Nov 19 - 23 | Doreen and Neelansh | Completed
+| Parallelize KD tree Construction | Nov 23 - Nov 26 | Neelansh | In Progress
+| Sequential KNN search | Nov 27 - Dec 3 | Doreen | Completed
+| Lock Free KD Tree Insertions | Nov 27 - Dec 3 | Neelansh | Completed
+| Finish Milestone Report | Dec 3 - Dec 4 | Doreen and Neelansh | Completed
+| Parallel KNN Search | Dec 5 - Dec 9 | Doreen | Not Started
+| Performance Benchmarking for KD Tree | Dec 6 - Dec 10 | Doreen and Neelansh | Not Started
+| Performance Benchmarking for KNN | Dec 6 - Dec 10 | Doreen and Neelansh | Not Started
+| Poster Session Prep | Dec 14 - Dec 15 | Doreen and Neelansh | Not Started
+| Finish Final Report | December 7 - Dec 14 | Doreen and Neelansh | Not Started
