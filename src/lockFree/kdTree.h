@@ -89,9 +89,9 @@ public:
     node->features = dataPoint.features;
     node->label = dataPoint.label;
     insertRecursiveLockFree(root, node, depth, k);
-}
+  }
 
-void printKDTree(KDNode* node) {
+  void printKDTree(KDNode* node) {
     if (node == nullptr) {
       return;
     }
@@ -111,42 +111,20 @@ void printKDTree(KDNode* node) {
   }
   
 private:
-  // Print KD-tree in-order
-  // void printKDTree(unique_ptr<KDNode>& root) {
-  // void printKDTree(KDNode* node) {
-  //   if (root == nullptr) {
-  //     return;
-  //   }
-
-  //   // Traverse left subtree
-  //   printKDTree(node->left.load());
-
-  //   // Print information for the current node
-  //   cout << "Features: ";
-  //   for (double feature : node->features) {
-  //     cout << feature << " ";
-  //   }
-  //   cout << "| Label: " << node->label << endl;
-
-  //   // Traverse right subtree
-  //   printKDTree(node->right.load());
-  // }
-
   void insertRecursiveLockFree(atomic<KDNode*>& current, KDNode* node, int depth, int k) {
     KDNode* expected = nullptr;
     if (!current.load() && current.compare_exchange_weak(expected, node)) {
-        return;
+      return;
     }
-
 
     // Determine dimension for comparison
     int dim = depth % k;
     if (node->features[dim] < current.load()->features[dim]) {
-        insertRecursiveLockFree(current.load()->left, node, depth + 1, k);
+      insertRecursiveLockFree(current.load()->left, node, depth + 1, k);
     } else {
-        insertRecursiveLockFree(current.load()->right, node, depth + 1, k);
+      insertRecursiveLockFree(current.load()->right, node, depth + 1, k);
     }
-}
+  }
 };
 
 #endif

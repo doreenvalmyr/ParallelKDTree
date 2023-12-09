@@ -33,7 +33,7 @@ $(KD_PARALLEL_TARGET): $(COMMON_OBJS) $(KD_PARALLEL_OBJS)
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
-DEFAULT_ARGS = -k 9 -i ../datasets/large-dataset.csv
+DEFAULT_ARGS = -k 6 -i ../datasets/small-dataset.csv
 
 # Run kdTree with specified arguments
 run-kd: $(KD_TARGET)

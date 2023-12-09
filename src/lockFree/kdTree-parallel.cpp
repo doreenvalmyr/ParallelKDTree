@@ -32,16 +32,16 @@ atomic<KDNode*> buildKDTreeImpl(vector<DataPoint>& data, int depth, int k) {
   {
     #pragma omp section
     {
-      // Build left subtree
-      vector<DataPoint> leftData(data.begin(), data.begin() + median);
-      node->left = buildKDTreeImpl(leftData, depth + 1, k).load();
+    // Build left subtree
+    vector<DataPoint> leftData(data.begin(), data.begin() + median);
+    node->left = buildKDTreeImpl(leftData, depth + 1, k).load();
     }
 
     #pragma omp section
     {
-      // Build right subtree
-      vector<DataPoint> rightData(data.begin() + median + 1, data.end());
-      node->right = buildKDTreeImpl(rightData, depth + 1, k).load();
+    // Build right subtree
+    vector<DataPoint> rightData(data.begin() + median + 1, data.end());
+    node->right = buildKDTreeImpl(rightData, depth + 1, k).load();
     }
   }
 
