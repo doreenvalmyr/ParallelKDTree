@@ -18,6 +18,8 @@ public:
   int targetLabel;
 
   void kNNSearch(const KDTree& kdTree, const vector<double>& target, int k);
+  
+  void kNNSearchParallel(const KDTree& kdTree, const vector<double>& target, int k);
 
   void printNearestNeighbors() {
     cout << "\nList of " << nearestNeighbors.size() << " nearest neighbors:" << endl;

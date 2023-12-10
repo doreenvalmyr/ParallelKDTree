@@ -9,6 +9,8 @@
 #include <cmath>
 #include <iostream>
 #include <memory>
+#include <atomic>
+#include <utility>
 
 using namespace std;
 
@@ -29,6 +31,7 @@ public:
   
   // Constructor to initialize KDNode with features
   KDNode() : label(0), left(nullptr), right(nullptr) {}
+
 };
 
 class KDTree {
@@ -81,8 +84,16 @@ public:
     cout << "Parsed " << dataPoints.size() << " data points from " << filename << endl;
     return dataPoints;
   }
-  
-private:
+
+  void insertNode(const DataPoint& dataPoint) {
+    unique_ptr<KDNode> newNode = make_unique<KDNode>();
+    newNode->features = dataPoint.features;
+    newNode->label = dataPoint.label;
+
+    // Use atomic operations for lock-free updates
+    insertNodeAtomic(root, newNode, 0);
+  }
+
   // Print KD-tree in-order
   void printKDTree(unique_ptr<KDNode>& root) {
     if (root == nullptr) {
@@ -101,6 +112,30 @@ private:
 
     // Traverse right subtree
     printKDTree(root->right);
+  }
+
+private:
+  void insertNodeAtomic(unique_ptr<KDNode>& current, unique_ptr<KDNode>& newNode, size_t depth) {
+    atomic<KDNode*> atomicCurrent(current.get());
+
+    if (atomicCurrent.load() == nullptr) {
+      // Use CAS to atomically update the pointer
+      KDNode* nullPtr = nullptr;
+      if (atomic_compare_exchange_strong(&atomicCurrent, &nullPtr, newNode.get())) {
+        // Successfully inserted the node
+        current.release();  // Release ownership of the pointer to avoid deletion
+      } else {
+        // Another thread updated the pointer before us, retry the insertion
+        insertNodeAtomic(current, newNode, depth);
+      }
+    } else {
+      size_t currentDim = depth % dimensions;
+      if (newNode->features[currentDim] < atomicCurrent.load()->features[currentDim]) {
+        insertNodeAtomic(current->left, newNode, depth + 1);
+      } else {
+        insertNodeAtomic(current->right, newNode, depth + 1);
+      }
+    }
   }
 };
 

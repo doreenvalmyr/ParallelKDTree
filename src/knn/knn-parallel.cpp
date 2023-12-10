@@ -103,6 +103,76 @@ void KNN::kNNSearch(const KDTree& kdTree, const vector<double>& target, int k) {
   }
 }
 
+void kNNSearchRecursiveParallel(const KDNode* currentNode, const vector<double>& target, size_t k,
+                        vector<DistanceNode>& nearestNeighbors, int depth) {
+  
+  if (currentNode == nullptr) {
+    return;
+  }
+
+  int axis = depth % target.size();
+
+  // Calculate distance of target point to current node
+  double distance;
+  try {
+    distance = calculateDistance(target, currentNode->features);
+  } catch (const invalid_argument& error) {
+    cerr << "Exception caught: " << error.what() << endl;
+    return;
+  }
+
+  DistanceNode neighbor = {distance, currentNode};
+
+  // Only one thread should moodify the nearestNeighbors vector at a time
+  #pragma omp critical
+  {
+    // Insert the new DistanceNode into the vector in ascending order
+    insertAndSortNeighbors(nearestNeighbors, neighbor, k);
+  }
+
+  // Parallelize the recursive calls
+  #pragma omp parallel
+  {
+    #pragma omp single nowait
+    {
+      // Recursive call for the branch containing the target point
+      if (target[axis] < currentNode->features[axis]) {
+        #pragma omp task
+        kNNSearchRecursiveParallel(currentNode->left.get(), target, k, nearestNeighbors, depth + 1);
+      } else {
+        #pragma omp task
+        kNNSearchRecursiveParallel(currentNode->right.get(), target, k, nearestNeighbors, depth + 1);
+      }
+
+      // Recursive call for the other branch if necessary
+      if (nearestNeighbors.size() < k || abs(target[axis] - currentNode->features[axis]) < nearestNeighbors.back().distance) {
+        if (target[axis] < currentNode->features[axis]) {
+          #pragma omp task
+          kNNSearchRecursiveParallel(currentNode->right.get(), target, k, nearestNeighbors, depth + 1);
+        } else {
+          #pragma omp task
+          kNNSearchRecursiveParallel(currentNode->left.get(), target, k, nearestNeighbors, depth + 1);
+        }
+      }
+    }
+  }
+}
+
+// Find k nearest neighbors of target point
+void KNN::kNNSearchParallel(const KDTree& kdTree, const vector<double>& target, int k) {
+  vector<DistanceNode> nearestNeighborsVector;
+
+  // Add k nearest neighbors to result using kdTree
+  kNNSearchRecursiveParallel(kdTree.root.get(), target, (size_t)k, nearestNeighborsVector, 0);
+
+  // Collect the results from the priority queue
+  while (!nearestNeighborsVector.empty()) {
+    DistanceNode point = nearestNeighborsVector.back();
+    nearestNeighbors.push_back({ point.node->features, point.node->label });
+    nearestNeighborsVector.pop_back();
+  }
+}
+
 // Parse target point (vector of features)
 vector<double> parseInputVector(const std::string& input) {
   istringstream iss(input);
@@ -168,16 +238,23 @@ int main(int argc, char *argv[]) {
   vector<DataPoint> data = kdTree.parseInput(filename, kdTree.dimensions);
   kdTree.buildKDTree(data, 0, d);
 
-  Timer totalSimulationTimer;
-  KNN knn;
-  knn.kNNSearch(kdTree, target, k);
-  double totalSimulationTime = totalSimulationTimer.elapsed();
+  Timer sequentialTimer;
+  KNN seqKnn;
+  seqKnn.kNNSearch(kdTree, target, k);
+  double sequentialTime = sequentialTimer.elapsed();
 
-  knn.printNearestNeighbors();
-  
-  knn.findTargetLabel();
+  Timer parallelTimer;
+  KNN parallelKnn;
+  parallelKnn.kNNSearchParallel(kdTree, target, k);
+  double parallelTime = parallelTimer.elapsed();
 
-  printf("\nTotal simulation time for KNN search: %.6fs\n", totalSimulationTime);
+  parallelKnn.printNearestNeighbors();
+
+  parallelKnn.findTargetLabel();
+
+  printf("\nTotal simulation time for KNN sequential search: %.6fs\n", sequentialTime);
+  printf("\nTotal simulation time for KNN parallel search: %.6fs\n", parallelTime);
+  printf("\nSpeedup: %.6fs\n", sequentialTime/parallelTime);
 
   return 0;
 }
