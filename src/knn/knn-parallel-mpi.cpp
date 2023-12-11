@@ -307,10 +307,10 @@ int main(int argc, char *argv[]) {
 
   KDTree kdTree;
   vector<DataPoint> data = kdTree.parseInput(filename, kdTree.dimensions);
-  kdTree.buildKDTree(data, 0, d);
 
   Timer sequentialTimer;
   KNN seqKnn;
+  kdTree.buildKDTree(data, 0, d);
   seqKnn.kNNSearch(kdTree, target, k);
   double sequentialTime = sequentialTimer.elapsed();
 
