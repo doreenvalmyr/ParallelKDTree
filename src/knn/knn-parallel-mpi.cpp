@@ -176,22 +176,12 @@ void kNNSearchMPI(const KDNode* root, const vector<double>& target, size_t k,
     DistanceNode2 neighbor = {distance, currentNode->label};
     insertAndSortNeighbors2(neighbors, neighbor, k);
 
-    if (neighbors.size() < k) {
-      if (target[axis] < currentNode->features[axis]) {
-        auto left = currentNode->left.get();
-        nodeStack.push({left, depth + 1});
-      } else {
-        auto left = currentNode->left.get();
-        nodeStack.push({left, depth + 1});
-      }
+    if (target[axis] < currentNode->features[axis]) {
+      nodeStack.push({currentNode->right.get(), depth + 1});
+      nodeStack.push({currentNode->left.get(), depth + 1});
     } else {
-      if (target[axis] < currentNode->features[axis]) {
-        auto right = currentNode->right.get();
-        nodeStack.push({right, depth + 1});
-      } else {
-        auto left = currentNode->left.get();
-        nodeStack.push({left, depth + 1});
-      }
+      nodeStack.push({currentNode->left.get(), depth + 1});
+      nodeStack.push({currentNode->right.get(), depth + 1});
     }
   }
 }

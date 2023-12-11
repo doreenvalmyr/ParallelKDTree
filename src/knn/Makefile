@@ -16,7 +16,10 @@ $(TARGET): $(KNN_SRC) $(KDTREE_SRC)
 $(PARALLEL_TARGET): $(KNN_PARALLEL_SRC) $(KDTREE_SRC)
 	$(CC) $(FLAGS) -o $@ $^
 
-DEFAULT_ARGS = -k 3 -d 6 -t '1.1 1.2 1.3 1.4 1.5 1.6' -i ../datasets/small-dataset.csv
+DEFAULT_ARGS = -k 200000 -d 10 -t '0 1 2 3 4 5 6 7 8 9' -i ../datasets/very-large-dataset.csv
+
+# CHANGE DEFAULT_ARGS ex: make run-parallel ARGS="-k 100000 -d 10 -t '0 1 2 3 4 5 6 7 8 9' -i ../datasets/very-large-dataset.csv"
+
 run: $(TARGET)
 	./$(TARGET) $(if $(ARGS),$(ARGS),$(DEFAULT_ARGS))
 
