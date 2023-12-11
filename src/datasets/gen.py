@@ -4,16 +4,16 @@ import numpy as np
 np.random.seed(42)
 
 # Number of data points
-num_points = 500000
+num_points = 2000000
 
 # Generate random data
 data = []
 for _ in range(num_points):
     # Generate random values for each feature
-    features = np.random.randint(1, 11, size=9)
+    features = np.random.randint(1, 11, size=10)
     
-    # Generate a random class label (1 or 2)
-    label = np.random.randint(1, 3)
+    # Generate a random class label
+    label = np.random.randint(1, 6)
     
     # Combine features and label into a single data point
     data_point = np.concatenate((features, [label]))
@@ -22,7 +22,7 @@ for _ in range(num_points):
     data.append(','.join(map(str, data_point)))
 
 # Save the generated data to a file
-with open('large-dataset.csv', 'w') as file:
+with open('very-large-dataset.csv', 'w') as file:
     file.write('\n'.join(data))
 
-print("Generated data and saved to 'large-dataset.csv'")
+print("Generated data and saved to 'very-large-dataset.csv'")

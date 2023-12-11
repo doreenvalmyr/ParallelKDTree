@@ -4,6 +4,7 @@
 #include <queue>
 #include <cmath>
 #include <algorithm>
+#include <stack>
 #include "knn.h"
 #include "../kdTree/kdTree.h"
 #include "../utils.h"
@@ -48,42 +49,43 @@ void insertAndSortNeighbors(vector<DistanceNode>& nearestNeighbors, DistanceNode
   }
 }
 
-// Search KD Tree recursively to determine k nearest neighbors
-void kNNSearchRecursive(const KDNode* currentNode, const vector<double>& target, size_t k,
-                        vector<DistanceNode>& nearestNeighbors, int depth) {
-  
-  if (currentNode == nullptr) {
+void kNNSearchIterative(const KDNode* root, const vector<double>& target, size_t k,
+                        vector<DistanceNode>& nearestNeighbors) {
+  if (root == nullptr) {
     return;
   }
 
-  int axis = depth % target.size();
+  stack<pair<const KDNode*, int>> nodeStack;
+  nodeStack.push({root, 0});
 
-  // Calculate distance of target point to current node
-  double distance;
-  try {
-    distance = calculateDistance(target, currentNode->features);
-  } catch (const invalid_argument& error) {
-    cerr << "Exception caught: " << error.what() << endl;
-    return;
-  }
+  while (!nodeStack.empty()) {
+    const KDNode* currentNode = nodeStack.top().first;
+    int depth = nodeStack.top().second;
+    nodeStack.pop();
 
-  // Insert the new DistanceNode into the vector in ascending order
-  DistanceNode neighbor = {distance, currentNode};
-  insertAndSortNeighbors(nearestNeighbors, neighbor, k);
+    if (currentNode == nullptr) {
+      continue;
+    }
 
-  // Recursively search the side of the splitting plane that contains the target point
-  if (target[axis] < currentNode->features[axis]) {
-    kNNSearchRecursive(currentNode->left.get(), target, k, nearestNeighbors, depth + 1);
-  } else {
-    kNNSearchRecursive(currentNode->right.get(), target, k, nearestNeighbors, depth + 1);
-  }
+    int axis = depth % target.size();
 
-  // Check if we need to search the other side (if there could be closer points)
-  if (nearestNeighbors.size() < k || abs(target[axis] - currentNode->features[axis]) < nearestNeighbors.back().distance) {
+    double distance;
+    try {
+      distance = calculateDistance(target, currentNode->features);
+    } catch (const invalid_argument& error) {
+      cerr << "Exception caught: " << error.what() << endl;
+      continue;
+    }
+
+    DistanceNode neighbor = {distance, currentNode};
+    insertAndSortNeighbors(nearestNeighbors, neighbor, k);
+
     if (target[axis] < currentNode->features[axis]) {
-      kNNSearchRecursive(currentNode->right.get(), target, k, nearestNeighbors, depth + 1);
+      nodeStack.push({currentNode->right.get(), depth + 1});
+      nodeStack.push({currentNode->left.get(), depth + 1});
     } else {
-      kNNSearchRecursive(currentNode->left.get(), target, k, nearestNeighbors, depth + 1);
+      nodeStack.push({currentNode->left.get(), depth + 1});
+      nodeStack.push({currentNode->right.get(), depth + 1});
     }
   }
 }
@@ -93,7 +95,7 @@ void KNN::kNNSearch(const KDTree& kdTree, const vector<double>& target, int k) {
   vector<DistanceNode> nearestNeighborsVector;
 
   // Add k nearest neighbors to result using kdTree
-  kNNSearchRecursive(kdTree.root.get(), target, (size_t)k, nearestNeighborsVector, 0);
+  kNNSearchIterative(kdTree.root.get(), target, (size_t)k, nearestNeighborsVector);
 
   // Collect the results from the priority queue
   while (!nearestNeighborsVector.empty()) {

@@ -1,9 +1,9 @@
-CC = g++
-FLAGS = -Wall -g -fopenmp
+CC = mpic++
+FLAGS = -std=c++14 -lpthread -Wall -g -fopenmp
 
 # Source files
 KNN_SRC = knn.cpp
-KNN_PARALLEL_SRC = knn-parallel.cpp
+KNN_PARALLEL_SRC = knn-parallel-mpi.cpp
 KDTREE_SRC = ../kdTree/kdTree.cpp
 
 # Executables
@@ -21,7 +21,7 @@ run: $(TARGET)
 	./$(TARGET) $(if $(ARGS),$(ARGS),$(DEFAULT_ARGS))
 
 run-parallel: $(PARALLEL_TARGET)
-	./$(PARALLEL_TARGET) $(if $(ARGS),$(ARGS),$(DEFAULT_ARGS))
+	mpirun -np 8 ./$(PARALLEL_TARGET) $(if $(ARGS),$(ARGS),$(DEFAULT_ARGS))
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(PARALLEL_TARGET)
