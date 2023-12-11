@@ -4,7 +4,7 @@
 #include "kdTree.h"
 #include <omp.h>
 
-#define MAX_PARALLEL_DEPTH 3
+#define MAX_PARALLEL_DEPTH 4
 using namespace std;
 
 // Function to build a KD-tree using OpenMP

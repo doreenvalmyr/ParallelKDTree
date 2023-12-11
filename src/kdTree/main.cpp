@@ -1,6 +1,7 @@
 #include <vector>
 #include <unistd.h>
 #include <limits>
+#include <omp.h>
 #include "kdTree.h"
 #include "../timing.h"
 #include "../utils.h"
@@ -10,6 +11,8 @@ using namespace std;
 size_t dimension = numeric_limits<int>::max();
 
 int main(int argc, char *argv[]) {
+  omp_set_nested(1);
+
   size_t k;
   string filename = "";
   int opt;
