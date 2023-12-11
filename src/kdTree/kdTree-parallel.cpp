@@ -4,10 +4,12 @@
 #include "kdTree.h"
 #include <omp.h>
 
+#define MAX_PARALLEL_DEPTH 3
 using namespace std;
 
 // Function to build a KD-tree using OpenMP
 unique_ptr<KDNode> buildKDTreeImpl(vector<DataPoint>& data, int depth, int k) {
+
   if (data.empty()) {
     return nullptr;
   }
@@ -27,24 +29,37 @@ unique_ptr<KDNode> buildKDTreeImpl(vector<DataPoint>& data, int depth, int k) {
   node->features = data[median].features;
   node->label = data[median].label;
 
-  // Construct subtrees in parallel
-  #pragma omp parallel sections
-  {
-    #pragma omp section
+ if (depth < MAX_PARALLEL_DEPTH) {
+    #pragma omp parallel
     {
-      // Build left subtree
-      vector<DataPoint> leftData(data.begin(), data.begin() + median);
-      node->left = buildKDTreeImpl(leftData, depth + 1, k);
-    }
+      #pragma omp single
+      {
+        #pragma omp task
+        {
+          // Build left subtree
+          vector<DataPoint> leftData(data.begin(), data.begin() + median);
+          node->left = buildKDTreeImpl(leftData, depth + 1, k);
+        }
 
-    #pragma omp section
-    {
-      // Build right subtree
-      vector<DataPoint> rightData(data.begin() + median + 1, data.end());
-      node->right = buildKDTreeImpl(rightData, depth + 1, k);
+        #pragma omp task
+        {
+          // Build right subtree
+          vector<DataPoint> rightData(data.begin() + median + 1, data.end());
+          node->right = buildKDTreeImpl(rightData, depth + 1, k);
+        }
+      }
     }
+    #pragma omp taskwait // Wait for tasks to complete
+  } else {
+    // Non-parallel execution for deeper levels
+    vector<DataPoint> leftData(data.begin(), data.begin() + median);
+    node->left = buildKDTreeImpl(leftData, depth + 1, k);
+
+    vector<DataPoint> rightData(data.begin() + median + 1, data.end());
+    node->right = buildKDTreeImpl(rightData, depth + 1, k);
   }
-
+ 
+ // #pragma omp taskwait // Wait for tasks to complete
   return node;
 }
 
