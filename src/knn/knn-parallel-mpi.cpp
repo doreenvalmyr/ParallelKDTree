@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <unistd.h>
 #include <vector>
 #include <queue>
@@ -187,7 +188,7 @@ void kNNSearchMPI(const KDNode* root, const vector<double>& target, size_t k,
 }
 
 // Find k nearest neighbors of target point (parallel implementation)
-void KNN::kNNSearchParallel(const vector<DataPoint>& data, const vector<double>& target, int k, int rank, int size) {
+void KNN::kNNSearchParallelMPI(const vector<DataPoint>& data, const vector<double>& target, int k, int rank, int size) {
   // Distribute data among processes
   vector<DataPoint> localData = distributeData(rank, size, data);
 
@@ -316,7 +317,7 @@ int main(int argc, char *argv[]) {
 
   Timer parallelTimer;
   KNN parallelKnn;
-  parallelKnn.kNNSearchParallel(data, target, k, rank, nproc);
+  parallelKnn.kNNSearchParallelMPI(data, target, k, rank, nproc);
   double parallelTime = parallelTimer.elapsed();
 
   if (rank == 0) {
@@ -327,6 +328,15 @@ int main(int argc, char *argv[]) {
     printf("\nTotal simulation time for KNN sequential search: %.6fs", sequentialTime);
     printf("\nTotal simulation time for KNN parallel search: %.6fs", parallelTime);
     printf("\nSpeedup: %.6f\n", sequentialTime/parallelTime);
+
+    std::ofstream results_file;
+    results_file.open("knn_timings.txt", std::ios_base::app); // Appending to the file
+
+    results_file << "Sequential: " << " Time: " << sequentialTime << " seconds" << endl;
+
+    results_file << "Parallel: " << "Processes: " << nproc << ", Time: " << parallelTime << " seconds" << endl;
+
+    results_file << "Speedup: " << (26.524757/ parallelTime) << "\n" << endl;
   }
 
   MPI_Finalize();

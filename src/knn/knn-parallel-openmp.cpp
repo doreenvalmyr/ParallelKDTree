@@ -180,7 +180,7 @@ void kNNSearchIterativeParallel(const KDNode* root, const vector<double>& target
 }
 
 // Find k nearest neighbors of target point (parallel implementation)
-void KNN::kNNSearchParallel(const KDTree& kdTree, const vector<double>& target, int k) {
+void KNN::kNNSearchParallelOpenMP(const KDTree& kdTree, const vector<double>& target, int k) {
   vector<DistanceNode> nearestNeighborsVector;
 
   kNNSearchIterativeParallel(kdTree.root.get(), target, static_cast<size_t>(k), nearestNeighborsVector);
@@ -265,7 +265,7 @@ int main(int argc, char *argv[]) {
 
   Timer parallelTimer;
   KNN parallelKnn;
-  parallelKnn.kNNSearchParallel(kdTree, target, k);
+  parallelKnn.kNNSearchParallelOpenMP(kdTree, target, k);
   double parallelTime = parallelTimer.elapsed();
 
   parallelKnn.printNearestNeighbors();

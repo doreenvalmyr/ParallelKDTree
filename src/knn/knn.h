@@ -23,8 +23,10 @@ public:
   int targetLabel;
 
   void kNNSearch(const KDTree& kdTree, const vector<double>& target, int k);
+
+  void kNNSearchParallelOpenMP(const KDTree& kdTree, const vector<double>& target, int k);
   
-  void kNNSearchParallel(const vector<DataPoint>& data, const vector<double>& target, int k, int rank, int nproc);
+  void kNNSearchParallelMPI(const vector<DataPoint>& data, const vector<double>& target, int k, int rank, int nproc);
 
   void printNearestNeighbors() {
     cout << "\nList of " << nearestNeighbors.size() << " nearest neighbors:" << endl;
