@@ -3,3 +3,5 @@
 
 # Ignore executables
 *.out
+
+knn_timings.txt

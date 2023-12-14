@@ -13,100 +13,6 @@
 
 using namespace std;
 
-// Calculate Euclidean distance between two points
-// Generalizable to points with any number of features
-double calculateDistance(vector<double> point1, vector<double> point2) {
-  // Throw exception for invalid input
-  if (point1.size() != point2.size()) {
-    throw invalid_argument("Points must have the same number of features");
-  }
-
-  double distance = 0.0;
-
-  for (size_t i = 0; i < point1.size(); ++i) {
-    double diff = point1[i] - point2[i];
-    distance += diff * diff;
-  }
-
-  return sqrt(distance);
-}
-
-// Insert a node into the nearest neighbor vector in the correct position
-// Nearest neighbor vector is sorted in ascending order of distances
-void insertAndSortNeighbors(vector<DistanceNode>& nearestNeighbors, DistanceNode& neighbor, size_t k) {
-  // Use lower_bound to find the position to insert the new element
-  auto it = std::lower_bound(nearestNeighbors.begin(),
-                            nearestNeighbors.end(),
-                            neighbor,
-                            [](const DistanceNode& a, const DistanceNode& b) {
-    return a.distance < b.distance;
-  });
-
-  nearestNeighbors.insert(it, neighbor);
-
-  // Remove the last element if there are more than k neighbors
-  if (nearestNeighbors.size() > k) {
-    nearestNeighbors.pop_back();
-  }
-}
-
-// Search KDTree for nearest neighbors
-void kNNSearchIterative(const KDNode* root, const vector<double>& target, size_t k,
-                        vector<DistanceNode>& nearestNeighbors) {
-  if (root == nullptr) {
-    return;
-  }
-
-  stack<pair<const KDNode*, int>> nodeStack;
-  nodeStack.push({root, 0});
-
-  while (!nodeStack.empty()) {
-    const KDNode* currentNode = nodeStack.top().first;
-    int depth = nodeStack.top().second;
-    nodeStack.pop();
-
-    if (currentNode == nullptr) {
-      continue;
-    }
-
-    int axis = depth % target.size();
-
-    double distance;
-    try {
-      distance = calculateDistance(target, currentNode->features);
-    } catch (const invalid_argument& error) {
-      cerr << "Exception caught: " << error.what() << endl;
-      continue;
-    }
-
-    DistanceNode neighbor = {distance, currentNode};
-    insertAndSortNeighbors(nearestNeighbors, neighbor, k);
-
-    if (target[axis] < currentNode->features[axis]) {
-      nodeStack.push({currentNode->right.get(), depth + 1});
-      nodeStack.push({currentNode->left.get(), depth + 1});
-    } else {
-      nodeStack.push({currentNode->left.get(), depth + 1});
-      nodeStack.push({currentNode->right.get(), depth + 1});
-    }
-  }
-}
-
-// Find k nearest neighbors of target point
-void KNN::kNNSearch(const KDTree& kdTree, const vector<double>& target, int k) {
-  vector<DistanceNode> nearestNeighborsVector;
-
-  // Add k nearest neighbors to result using kdTree
-  kNNSearchIterative(kdTree.root.get(), target, (size_t)k, nearestNeighborsVector);
-
-  // Collect the results from the priority queue
-  while (!nearestNeighborsVector.empty()) {
-    DistanceNode point = nearestNeighborsVector.back();
-    nearestNeighbors.push_back({ point.node->features, point.node->label });
-    nearestNeighborsVector.pop_back();
-  }
-}
-
 void kNNSearchIterativeParallel(const KDNode* root, const vector<double>& target, size_t k,
                                  vector<DistanceNode>& nearestNeighbors) {
   if (root == nullptr) {
@@ -124,7 +30,6 @@ void kNNSearchIterativeParallel(const KDNode* root, const vector<double>& target
     while (!nodeStack.empty()) {
       const KDNode* currentNode;
       int depth;
-      // cout << "STEP 1" << endl;
 
       #pragma omp critical
       {
@@ -132,8 +37,6 @@ void kNNSearchIterativeParallel(const KDNode* root, const vector<double>& target
         depth = nodeStack.top().second;
         nodeStack.pop();
       }
-
-      // cout << "STEP 2" << endl;
 
       int axis = depth % targetSize;
 
@@ -145,36 +48,24 @@ void kNNSearchIterativeParallel(const KDNode* root, const vector<double>& target
         continue;
       }
 
-      // cout << "STEP 3" << endl;
-
       DistanceNode neighbor = {distance, currentNode};
       #pragma omp critical
       insertAndSortNeighbors(nearestNeighbors, neighbor, k);
-
-      // cout << "STEP 4" << endl;
         
       #pragma omp critical
       {
         if (target[axis] < currentNode->features[axis]) {
-          // #pragma omp task
-          {
           auto right = currentNode->right.get();
           auto left = currentNode->left.get();
           if (right != nullptr) nodeStack.push({right, depth + 1});
           if (left != nullptr) nodeStack.push({left, depth + 1});
-          }
         } else {
-          // #pragma omp task
-          {
           auto right = currentNode->right.get();
           auto left = currentNode->left.get();
           if (left != nullptr) nodeStack.push({left, depth + 1});
           if (right != nullptr) nodeStack.push({right, depth + 1});
-          }
         }
       }
-
-      // cout << "STEP 5" << endl;
     }
   }
 }
@@ -191,17 +82,6 @@ void KNN::kNNSearchParallelOpenMP(const KDTree& kdTree, const vector<double>& ta
     nearestNeighbors.push_back({point.node->features, point.node->label});
     nearestNeighborsVector.pop_back();
   }
-}
-
-// Parse target point (vector of features)
-vector<double> parseInputVector(const std::string& input) {
-  istringstream iss(input);
-  double feature;
-  vector<double> point;
-  while (iss >> feature) {
-    point.push_back(feature);
-  }
-  return point;
 }
 
 int main(int argc, char *argv[]) {
@@ -258,11 +138,13 @@ int main(int argc, char *argv[]) {
   vector<DataPoint> data = kdTree.parseInput(filename, kdTree.dimensions);
   kdTree.buildKDTree(data, 0, d);
 
+  // Run sequential knn search
   Timer sequentialTimer;
   KNN seqKnn;
   seqKnn.kNNSearch(kdTree, target, k);
   double sequentialTime = sequentialTimer.elapsed();
 
+  // Run parallel knn search
   Timer parallelTimer;
   KNN parallelKnn;
   parallelKnn.kNNSearchParallelOpenMP(kdTree, target, k);

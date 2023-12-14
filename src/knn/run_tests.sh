@@ -5,5 +5,5 @@ for i in "${cores[@]}";
 do
     echo "Running on $i cores"
     export NUM_PROCS=$i
-    make run-parallel
+    make run-mpi
 done

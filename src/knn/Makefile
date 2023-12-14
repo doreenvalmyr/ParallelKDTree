@@ -29,7 +29,7 @@ run: $(TARGET)
 	./$(TARGET) $(if $(ARGS),$(ARGS),$(DEFAULT_ARGS))
 
 run-mpi: $(MPI_TARGET)
-	mpirun -np 8 ./$(MPI_TARGET) $(if $(ARGS),$(ARGS),$(DEFAULT_ARGS))
+	mpirun -np $(NUM_PROCS) ./$(MPI_TARGET) $(if $(ARGS),$(ARGS),$(DEFAULT_ARGS))
 
 run-openmp: $(OPENMP_TARGET)
 	./$(OPENMP_TARGET) $(if $(ARGS),$(ARGS),$(DEFAULT_ARGS))
